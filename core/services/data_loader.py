@@ -13,38 +13,38 @@ from ..db.models.store_timezone import StoreTimezone
 logger = logging.getLogger(__name__)
 
 class DataLoader:
-    def __init__(self, db: Session, batch_size: int = 5000):
+    def __init__(self, db, batch_size: int = 5000):
         self.db = db
         self.batch_size = batch_size  
         self.engine = db.bind 
 
-    def _log_progress(self, processed: int, total: int, batch_num: int):
+    def _log_progress(self, processed, total, batch_num):
 
         percentage = (processed / total) * 100
         logger.info(f"processed batch  {percentage}%")
     
-    # def store_status_data(self, csv_path):
+    def store_status_data(self, csv_path):
         
-    #     logger.info(f"upload from {csv_path}")        
+        logger.info(f"upload from {csv_path}")        
         
-    #     df = pd.read_csv(csv_path)
-    #     total_records = len(df)
-    #     logger.info(f"Found {total_records} records")
+        df = pd.read_csv(csv_path)
+        total_records = len(df)
+        logger.info(f"Found {total_records} records")
        
-    #     df['timestamp_utc'] = pd.to_datetime(df['timestamp_utc'])
-    #     df['store_id'] = df['store_id'].astype(str)
+        df['timestamp_utc'] = pd.to_datetime(df['timestamp_utc'])
+        df['store_id'] = df['store_id'].astype(str)
         
-    #     with self.engine.connect() as conn:
-    #         conn.execute(text("TRUNCATE TABLE store_status"))
-    #         conn.commit()
+        with self.engine.connect() as conn:
+            conn.execute(text("TRUNCATE TABLE store_status"))
+            conn.commit()
         
-    #     # pandas -> sql for fsaterrr batch insertion
-    #     df.to_sql('store_status', self.engine, if_exists='append', index=False, method='multi')        
-    #     logger.info(f"upload completed: {total_records} records")
-    #     return total_records
+        # pandas -> sql for fsaterrr batch insertion
+        df.to_sql('store_status', self.engine, if_exists='append', index=False, method='multi')        
+        logger.info(f"upload completed: {total_records} records")
+        return total_records
     
     def load_store_status(self, csv_path):
-    
+        
         logger.info(f"Starting store status upload from {csv_path}")
         
         df = pd.read_csv(csv_path)
@@ -63,7 +63,7 @@ class DataLoader:
         for start_idx in range(0, total_records, self.batch_size):
             batch_num += 1
             end_idx = min(start_idx + self.batch_size, total_records)
-            #end_idx = total_records if start_idx + self.batch_size > total_records else start_idx + self.batch_size
+            #end_ind = total_records if start_idx + self.batch_size > total_records else start_idx + self.batch_size
             batch_df = df.iloc[start_idx:end_idx]
             
             batch_data = []
@@ -74,22 +74,23 @@ class DataLoader:
                     'status': row['status']
                 })
             
-            
+            # Bulk insert current batch
             self.db.bulk_insert_mappings(StoreStatus, batch_data)
             self.db.commit()
             
             records_loaded += len(batch_data)
             self._log_progress(records_loaded, total_records, batch_num)
         
-        logger.info(f"Store status upload completed: {records_loaded} records")
+        logger.info(f"Store status uploaded: {records_loaded} records")
         return records_loaded
     
     def load_business_hours(self, csv_path):
+
         logger.info(f"Starting business hours upload from {csv_path}")
         
         df = pd.read_csv(csv_path)
         total_records = len(df)
-        logger.info(f"Found {total_records} records")
+        logger.info(f"Found {total_records} records to process")
         
         self.db.query(StoreBusinessHours).delete()
         self.db.commit()
@@ -100,11 +101,12 @@ class DataLoader:
         for start_idx in range(0, total_records, self.batch_size):
             batch_num += 1
             end_idx = min(start_idx + self.batch_size, total_records)
-            #end_idx = total_records if start_idx + self.batch_size > total_records else start_idx + self.batch_size
             batch_df = df.iloc[start_idx:end_idx]
             
+            # Convert to list of dictionaries for bulk insert
             batch_data = []
             for _, row in batch_df.iterrows():
+                # Parse times
                 start_time = datetime.strptime(row['start_time_local'], '%H:%M:%S').time()
                 end_time = datetime.strptime(row['end_time_local'], '%H:%M:%S').time()
                 
@@ -115,13 +117,14 @@ class DataLoader:
                     'end_time_local': end_time
                 })
             
+            # Bulk insert current batch
             self.db.bulk_insert_mappings(StoreBusinessHours, batch_data)
             self.db.commit()
             
             records_loaded += len(batch_data)
             self._log_progress(records_loaded, total_records, batch_num)
         
-        logger.info(f"Business hours upload completed: {records_loaded} records")
+        logger.info(f" Business hours uploaded: {records_loaded} records")
         return records_loaded
     
     def load_timezones(self, csv_path):
@@ -129,7 +132,7 @@ class DataLoader:
         
         df = pd.read_csv(csv_path)
         total_records = len(df)
-        logger.info(f"Found {total_records} records")
+        logger.info(f"Found {total_records} records to process")
         
         self.db.query(StoreTimezone).delete()
         self.db.commit()
@@ -142,6 +145,7 @@ class DataLoader:
             end_idx = min(start_idx + self.batch_size, total_records)
             batch_df = df.iloc[start_idx:end_idx]
             
+            # Convert to list of dictionaries for bulk insert
             batch_data = []
             for _, row in batch_df.iterrows():
                 batch_data.append({
@@ -149,13 +153,13 @@ class DataLoader:
                     'timezone_str': row['timezone_str']
                 })
             
+            # Bulk insert current batch
             self.db.bulk_insert_mappings(StoreTimezone, batch_data)
             self.db.commit()
             
             records_loaded += len(batch_data)
             self._log_progress(records_loaded, total_records, batch_num)
         
-        logger.info(f"Timezones upload completed: {records_loaded} records")
+        logger.info(f"Timezones uploaded: {records_loaded} records")
         return records_loaded
-    
-     
+ 
