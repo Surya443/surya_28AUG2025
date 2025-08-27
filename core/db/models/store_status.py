@@ -5,7 +5,7 @@ class StoreStatus(Base):
 
     __tablename__ = "store_status"
 
-    store_id = Column(Integer, nullable=False)
+    store_id = Column(String, nullable=False)
     timestamp_utc = Column(TIMESTAMP(timezone=True), nullable=False)  # always UTC
     status = Column(String(10), nullable=False)  
     #again no single column alone is unique, but their combination is, so.....

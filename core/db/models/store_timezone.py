@@ -5,5 +5,5 @@ class StoreTimezone(Base):
     
     __tablename__ = "store_timezones"
 
-    store_id = Column(Integer, primary_key=True, nullable=False)
+    store_id = Column(String, primary_key=True, nullable=False)
     timezone_str = Column(String, nullable=False, default="America/Chicago")
