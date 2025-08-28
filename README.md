@@ -36,6 +36,15 @@ docker compose up -d
 5. /upload_timezone : endpoint for uploading 'timezone' csv
 6. /metrics : converts report csv file contents to prometheus query which in turn is connected to grafana dashboard
 ```
+7. After creating report, hit **/metrics endpoint** [it will convert the contents in report csv files to **Prometheus QL** structure
+8. Check if Prometheus QL was successful  by entering some query on 
+```http://localhost:9090/targets```
+
+7. Login to Graphana on
+ ```http://localhost:3000```
+
+8. Create dashboard and configure local Prometheus as data source
+
 
 
 
