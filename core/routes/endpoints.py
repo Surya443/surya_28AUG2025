@@ -129,29 +129,24 @@ async def get_report(report_id: str):
         
         report = reports_storage[report_id]
         
+        print(f"Report {report_id} current status: {report['status'].value}")
+        
         if report["status"] == ReportStatus.COMPLETE:
             csv_data = report["csv_data"]
             
+            print(f"Report {report_id} response: CSV file download")
             return StreamingResponse(
                 io.StringIO(csv_data),
                 media_type="text/csv",
                 headers={"Content-Disposition": f"attachment; filename=store_report_{report_id}.csv"}
-            )
-        elif report["status"] == ReportStatus.ERROR:
-            return {
-                "status": "Error",
-                "error": report.get("error", "Unknown error occurred")
-            }
-        else:
+            )       
+        else:            
             return {"status": "Running"}
             
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get report: {str(e)}")
-
-
-
 
 @router.post("/upload_store_status")
 async def upload_store_status(file: UploadFile = File(...), db: Session = Depends(get_db)):
